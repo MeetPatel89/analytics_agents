@@ -2,40 +2,48 @@ from config import API_KEY, ROOT_DIR
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, HumanMessagePromptTemplate
+
+from langchain.chains import ConversationChain, LLMChain
+
+from langchain.memory import ConversationBufferMemory
 
 llm = ChatOpenAI(
     api_key=API_KEY,
     model="gpt-3.5-turbo",
-    temperature=0
+    temperature=1
 )
 
-template = ChatPromptTemplate.from_messages([
-    HumanMessage(
-        content="Translate this sentence to French: 'I love programming'"
-    ),
-    AIMessage(
-        content="J'adore la programmation"
-    ),
-    MessagesPlaceholder(variable_name="messages")
-]
+memory = ConversationBufferMemory(
+    memory_key="messages_history",
+    return_messages=True
 )
 
-chain = template | llm 
+prompt = ChatPromptTemplate(
+    messages = [
+        MessagesPlaceholder(variable_name="messages_history"),
+        HumanMessagePromptTemplate.from_template("{human_input}")
+    ],
+    input_variables=["human_input"]
+)
 
-human_prompt = input(">> ")
+# chain = prompt | llm
 
-print(human_prompt)
+chain = LLMChain(
+    llm=llm,
+    prompt=prompt,
+    verbose=True,
+    memory=memory
+)
 
-result = chain.invoke(input = {
-    "messages": [
-        HumanMessage(
-            content=f"{human_prompt}"
-        )
-    ]
-})
+while True:
+    content = input("HUMAN INPUT: ")
+    if content in ["exit", "quit", "done"]:
+        break
 
-print(result)
-print(type(result))
-print("")
-print(result.content)
+    response = chain.invoke(input={
+        "human_input": f"{content}"
+    })
+
+    print(type(response))
+    print(response)
