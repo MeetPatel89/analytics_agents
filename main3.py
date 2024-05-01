@@ -1,7 +1,6 @@
 from langchain_openai import ChatOpenAI
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 from config import API_KEY, ROOT_DIR
 
@@ -11,14 +10,24 @@ llm = ChatOpenAI(
     temperature=0
 )
 
-template = 
-
-conversation = ConversationChain(
-    llm=llm,
-    verbose=True,
-    memory=ConversationBufferMemory()
+prompt = ChatPromptTemplate.from_messages(
+    [
+        SystemMessage(content="You are a helpful assistant. Answer all questions to the best of your ability."),
+        MessagesPlaceholder(variable_name="messages_history"),
+        HumanMessage(content="And 3 more?")
+    ]
 )
 
-content = input("Enter the programming language: ")
-response = conversation.predict(input=f"What is the best way to learn {content}?")
+chain = prompt | llm
+
+response = chain.invoke(
+    {
+        "messages_history": [
+            HumanMessage(content='What is 1 + 1?'), 
+            AIMessage(content='1 + 1 = 2')
+        ]
+    }
+)
+
+print(type(response))
 print(response)
